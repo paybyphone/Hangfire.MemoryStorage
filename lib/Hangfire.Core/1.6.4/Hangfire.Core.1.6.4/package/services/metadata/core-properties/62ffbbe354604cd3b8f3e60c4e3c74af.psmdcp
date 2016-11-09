@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>Sergey Odinokov</dc:creator>
+  <dc:description>Core components for Hangfire (background job system for ASP.NET applications).</dc:description>
+  <dc:identifier>Hangfire.Core</dc:identifier>
+  <version>1.6.4</version>
+  <keywords>Hangfire OWIN Long-Running Background Fire-And-Forget Delayed Recurring Tasks Jobs Scheduler Threading Queues</keywords>
+  <lastModifiedBy>NuGet, Version=3.4.4.1321, Culture=neutral, PublicKeyToken=31bf3856ad364e35;Microsoft Windows NT 6.1.7601 Service Pack 1;.NET Framework 4.5</lastModifiedBy>
+</coreProperties>

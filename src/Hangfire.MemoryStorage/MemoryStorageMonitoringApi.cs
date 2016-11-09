@@ -15,12 +15,13 @@ namespace Hangfire.MemoryStorage
 {
     public class MemoryStorageMonitoringApi : IMonitoringApi
     {
-        public JobList<DeletedJobDto> DeletedJobs(int from, int count)
+        public JobList<DeletedJobDto> DeletedJobs(int from, int count, string jobIdFilter = null)
         {
             return GetJobs(
                 from,
                 count,
                 DeletedState.StateName,
+                jobIdFilter,
                 (jsonJob, job, stateData) => new DeletedJobDto
                 {
                     Job = job,
@@ -28,37 +29,38 @@ namespace Hangfire.MemoryStorage
                 });
         }
 
-        public long DeletedListCount()
+        public long DeletedListCount(string jobIdFilter = null)
         {
             return GetNumberOfJobsByStateName(DeletedState.StateName);
         }
 
-        public long EnqueuedCount(string queue)
+        public long EnqueuedCount(string queue, string jobIdFilter = null)
         {
             return Data.GetEnumeration<JobQueueDto>().Count(q => q.Queue == queue && !q.FetchedAt.HasValue);
         }
 
-        public JobList<EnqueuedJobDto> EnqueuedJobs(string queue, int from, int perPage)
+        public JobList<EnqueuedJobDto> EnqueuedJobs(string queue, int from, int perPage, string jobIdFilter = null)
         {
             var enqueuedJobIds = QueueApi.GetEnqueuedJobIds(queue, from, perPage, false);
 
             return EnqueuedJobs(enqueuedJobIds);
         }
 
-        public IDictionary<DateTime, long> FailedByDatesCount()
+        public IDictionary<DateTime, long> FailedByDatesCount(string jobIdFilter = null)
         {
             return GetTimelineStats("failed");
         }
 
-        public long FailedCount()
+        public long FailedCount(string jobIdFilter = null)
         {
             return GetNumberOfJobsByStateName(FailedState.StateName);
         }
 
-        public JobList<FailedJobDto> FailedJobs(int from, int count)
+        public JobList<FailedJobDto> FailedJobs(int from, int count, string jobIdFilter = null)
         {
             return GetJobs(from, count,
                 FailedState.StateName,
+                jobIdFilter,
                 (jsonJob, job, stateData) => new FailedJobDto
                 {
                     Job = job,
@@ -70,12 +72,12 @@ namespace Hangfire.MemoryStorage
                 });
         }
 
-        public long FetchedCount(string queue)
+        public long FetchedCount(string queue, string jobIdFilter = null)
         {
             return Data.GetEnumeration<JobQueueDto>().Count(q => q.Queue == queue && q.FetchedAt.HasValue);
         }
 
-        public JobList<FetchedJobDto> FetchedJobs(string queue, int from, int perPage)
+        public JobList<FetchedJobDto> FetchedJobs(string queue, int from, int perPage, string jobIdFilter = null)
         {
             var fetchedJobIds = QueueApi.GetEnqueuedJobIds(queue, from, perPage, true);
 
@@ -113,12 +115,12 @@ namespace Hangfire.MemoryStorage
             return stats;
         }
 
-        public IDictionary<DateTime, long> HourlyFailedJobs()
+        public IDictionary<DateTime, long> HourlyFailedJobs(string jobIdFilter = null)
         {
             return GetHourlyTimelineStats("failed");
         }
 
-        public IDictionary<DateTime, long> HourlySucceededJobs()
+        public IDictionary<DateTime, long> HourlySucceededJobs(string jobIdFilter = null)
         {
             return GetHourlyTimelineStats("succeeded");
         }
@@ -145,15 +147,16 @@ namespace Hangfire.MemoryStorage
             };
         }
 
-        public long ProcessingCount()
+        public long ProcessingCount(string jobIdFilter = null)
         {
             return GetNumberOfJobsByStateName(ProcessingState.StateName);
         }
 
-        public JobList<ProcessingJobDto> ProcessingJobs(int from, int count)
+        public JobList<ProcessingJobDto> ProcessingJobs(int from, int count, string jobIdFilter = null)
         {
             return GetJobs(from, count,
                 ProcessingState.StateName,
+                jobIdFilter,
                 (jsonJob, job, stateData) => new ProcessingJobDto
                 {
                     Job = job,
@@ -182,15 +185,16 @@ namespace Hangfire.MemoryStorage
             return query.ToList();
         }
 
-        public long ScheduledCount()
+        public long ScheduledCount(string jobIdFilter = null)
         {
             return GetNumberOfJobsByStateName(ScheduledState.StateName);
         }
 
-        public JobList<ScheduledJobDto> ScheduledJobs(int from, int count)
+        public JobList<ScheduledJobDto> ScheduledJobs(int from, int count, string jobIdFilter = null)
         {
             return GetJobs(from, count,
                 ScheduledState.StateName,
+                jobIdFilter,
                 (jsonJob, job, stateData) => new ScheduledJobDto
                 {
                     Job = job,
@@ -218,15 +222,16 @@ namespace Hangfire.MemoryStorage
             return query.ToList();
         }
 
-        public IDictionary<DateTime, long> SucceededByDatesCount()
+        public IDictionary<DateTime, long> SucceededByDatesCount(string jobIdFilter = null)
         {
             return GetTimelineStats("succeeded");
         }
 
-        public JobList<SucceededJobDto> SucceededJobs(int from, int count)
+        public JobList<SucceededJobDto> SucceededJobs(int from, int count, string jobIdFilter = null)
         {
             return GetJobs(from, count,
                 SucceededState.StateName,
+                jobIdFilter,
                 (jsonJob, job, stateData) => new SucceededJobDto
                 {
                     Job = job,
@@ -239,7 +244,7 @@ namespace Hangfire.MemoryStorage
                 });
         }
 
-        public long SucceededListCount()
+        public long SucceededListCount(string jobIdFilter = null)
         {
             return GetNumberOfJobsByStateName(SucceededState.StateName);
         }
@@ -354,10 +359,14 @@ namespace Hangfire.MemoryStorage
             int from,
             int count,
             string stateName,
+            string jobFilter,
             Func<JsonJob, Job, Dictionary<string, string>, TDto> selector)
         {
             var jobs =
-                Data.GetEnumeration<JobDto>().Where(j => j.StateName == stateName).OrderByDescending(j => j.CreatedAt);
+                Data.GetEnumeration<JobDto>()
+                    .Where(j => j.StateName == stateName)
+                    .Where(j => jobFilter == null || j.Parameters.Any(p => p.Value == "\"" + jobFilter + "\""))
+                    .OrderByDescending(j => j.CreatedAt);
 
             var query = (from job in jobs
                 select new JsonJob
